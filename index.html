@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>マーケティングダッシュボード（モック）</title>
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons (任意) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Chart.js 4 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    body { background-color: #f7f8fa; }
+    .card-kpi { border: 0; border-radius: 1rem; box-shadow: 0 5px 20px rgba(0,0,0,.05); }
+    .kpi-title { font-size: .95rem; color: #6c757d; }
+    .kpi-value { font-size: 1.8rem; font-weight: 700; }
+    .kpi-delta.up { color: #198754; }
+    .kpi-delta.down { color: #dc3545; }
+    footer { color:#6c757d; }
+  </style>
+</head>
+<body>
+  <!-- ナビゲーション -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold" href="#"><i class="bi bi-graph-up"></i> Marketing Dashboard (Mock)</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto align-items-lg-center gap-2">
+          <li class="nav-item">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-secondary text-white border-0"><i class="bi bi-calendar3"></i></span>
+              <select id="rangeSelect" class="form-select form-select-sm">
+                <option value="3">直近3か月</option>
+                <option value="6" selected>直近6か月</option>
+                <option value="12">直近12か月</option>
+              </select>
+            </div>
+          </li>
+          <li class="nav-item">
+            <button id="regenBtn" class="btn btn-sm btn-outline-light"><i class="bi bi-shuffle"></i> ダミーデータ再生成</button>
+          </li>
+          <li class="nav-item">
+            <a class="btn btn-sm btn-success" href="#" onclick="window.print()"><i class="bi bi-printer"></i> 印刷/保存</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container-fluid my-4">
+    <!-- KPI -->
+    <div class="row g-3">
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="card card-kpi p-3">
+          <div class="kpi-title">訪問数（Sessions）</div>
+          <div class="d-flex justify-content-between align-items-end">
+            <div class="kpi-value" id="kpiVisitors">--</div>
+            <div class="kpi-delta" id="deltaVisitors">--</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="card card-kpi p-3">
+          <div class="kpi-title">コンバージョン（CV）</div>
+          <div class="d-flex justify-content-between align-items-end">
+            <div class="kpi-value" id="kpiConversions">--</div>
+            <div class="kpi-delta" id="deltaConversions">--</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="card card-kpi p-3">
+          <div class="kpi-title">CVR</div>
+          <div class="d-flex justify-content-between align-items-end">
+            <div class="kpi-value" id="kpiCVR">--</div>
+            <div class="kpi-delta" id="deltaCVR">--</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="card card-kpi p-3">
+          <div class="kpi-title">推定売上</div>
+          <div class="d-flex justify-content-between align-items-end">
+            <div class="kpi-value" id="kpiRevenue">--</div>
+            <div class="kpi-delta" id="deltaRevenue">--</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- グラフ -->
+    <div class="row g-3 mt-1">
+      <div class="col-12 col-xl-6">
+        <div class="card h-100">
+          <div class="card-header fw-semibold">月次トレンド：訪問数とCV</div>
+          <div class="card-body"><canvas id="lineChart" height="140"></canvas></div>
+        </div>
+      </div>
+      <div class="col-12 col-xl-6">
+        <div class="card h-100">
+          <div class="card-header fw-semibold">チャネル別流入（直近月）</div>
+          <div class="card-body"><canvas id="barChart" height="140"></canvas></div>
+        </div>
+      </div>
+      <div class="col-12 col-xl-4">
+        <div class="card h-100">
+          <div class="card-header fw-semibold">デバイス構成（直近月）</div>
+          <div class="card-body"><canvas id="pieChart" height="160"></canvas></div>
+        </div>
+      </div>
+      <div class="col-12 col-xl-8">
+        <div class="card h-100">
+          <div class="card-header fw-semibold d-flex align-items-center justify-content-between">
+            <span>最新キャンペーン別成績（直近月）</span>
+            <small class="text-muted">* ダミーデータ</small>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>キャンペーン名</th>
+                    <th class="text-end">クリック</th>
+                    <th class="text-end">CV</th>
+                    <th class="text-end">CVR</th>
+                    <th class="text-end">CPA</th>
+                    <th class="text-end">費用</th>
+                  </tr>
+                </thead>
+                <tbody id="campaignTbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert alert-info mt-4" role="alert">
+      <i class="bi bi-info-circle"></i>
+      このページは <strong>完全静的なHTMLモック</strong> です。Xserver等の共有サーバーに <code>index.html</code> としてアップロードするだけで動作します。実データに差し替える場合は、後日 <code>fetch()</code> でCSV/JSONを読み込むハンドラを追加してください。
+    </div>
+  </main>
+
+  <footer class="container-fluid py-4 small text-center">
+    <span>© Mock Dashboard • Bootstrap + Chart.js • 生成データは架空です</span>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // ===== ダミーデータ生成ユーティリティ =====
+    const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    const randFloat = (min, max, digits = 2) => (Math.random() * (max - min) + min).toFixed(digits);
+
+    const monthLabels = (n) => {
+      const labels = [];
+      const base = new Date();
+      for (let i = n - 1; i >= 0; i--) {
+        const d = new Date(base.getFullYear(), base.getMonth() - i, 1);
+        labels.push(`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}`);
+      }
+      return labels;
+    };
+
+    function genMonthly(n) {
+      const visitors = [], conversions = [];
+      let v = randInt(4000, 7000);
+      let cvr = parseFloat(randFloat(0.8, 3.0)); // 0.8%〜3.0%
+      for (let i = 0; i < n; i++) {
+        // トレンドっぽく微増減
+        v = Math.max(1200, v + randInt(-800, 900));
+        const c = Math.max(20, Math.round(v * (cvr/100) + randInt(-20, 20)));
+        visitors.push(v);
+        conversions.push(c);
+        cvr = Math.max(0.5, Math.min(4.0, cvr + randFloat(-0.3, 0.3)));
+      }
+      return { visitors, conversions };
+    }
+
+    function genChannels() {
+      const names = ['Organic','Paid','Social','Direct','Referral','Email'];
+      const arr = names.map(n => ({ name: n, value: randInt(300, 4000) }));
+      // ソートして見やすく
+      arr.sort((a,b)=>b.value-a.value);
+      return arr;
+    }
+
+    function genDevices() {
+      const phone = randInt(50, 75);
+      const desktop = randInt(20, 45);
+      const tablet = Math.max(100 - phone - desktop, 5);
+      return [phone, desktop, tablet];
+    }
+
+    function genCampaigns() {
+      const names = ['Spring Sale','Brand KW','Competitor KW','Retargeting','YouTube CPV','Instagram Story','Affiliate A','Display GDN'];
+      return names.slice(0, randInt(5, names.length)).map(n => {
+        const clicks = randInt(600, 12000);
+        const cvr = parseFloat(randFloat(0.6, 4.2));
+        const cv = Math.max(5, Math.round(clicks * (cvr/100)));
+        const cpa = randInt(400, 4500);
+        const cost = cv * cpa;
+        return { name: n, clicks, cv, cvr, cpa, cost };
+      });
+    }
+
+    // ===== グローバル状態 =====
+    let lineChart, barChart, pieChart;
+
+    function fmtNumber(x) {
+      return x.toLocaleString('ja-JP');
+    }
+    function fmtYen(x) {
+      return '¥' + x.toLocaleString('ja-JP');
+    }
+
+    function setDelta(el, value) {
+      const isUp = value >= 0;
+      el.className = 'kpi-delta ' + (isUp ? 'up' : 'down');
+      el.textContent = (isUp ? '▲' : '▼') + Math.abs(value).toFixed(1) + '% vs 前月';
+    }
+
+    function rebuild(rangeMonths = 6) {
+      // 1) 時系列データ
+      const labels = monthLabels(rangeMonths);
+      const series = genMonthly(rangeMonths);
+
+      // KPI算出（最新月ベース）
+      const lastIdx = rangeMonths - 1;
+      const prevIdx = Math.max(0, lastIdx - 1);
+      const lastVisitors = series.visitors[lastIdx];
+      const lastConversions = series.conversions[lastIdx];
+      const prevVisitors = series.visitors[prevIdx];
+      const prevConversions = series.conversions[prevIdx];
+      const cvr = lastConversions / lastVisitors * 100;
+      const revenue = lastConversions * randInt(2000, 8000); // 1CVあたりの仮単価
+
+      // KPI表示
+      document.getElementById('kpiVisitors').textContent = fmtNumber(lastVisitors);
+      document.getElementById('kpiConversions').textContent = fmtNumber(lastConversions);
+      document.getElementById('kpiCVR').textContent = cvr.toFixed(2) + '%';
+      document.getElementById('kpiRevenue').textContent = fmtYen(revenue);
+      setDelta(document.getElementById('deltaVisitors'), ((lastVisitors - prevVisitors)/prevVisitors)*100);
+      setDelta(document.getElementById('deltaConversions'), ((lastConversions - prevConversions)/prevConversions)*100);
+      setDelta(document.getElementById('deltaCVR'), ((lastConversions/lastVisitors - prevConversions/prevVisitors)/(prevConversions/prevVisitors))*100);
+      setDelta(document.getElementById('deltaRevenue'), randFloat(-8, 12));
+
+      // 2) チャネル & デバイス（直近月）
+      const channels = genChannels();
+      const devices = genDevices();
+
+      // 3) キャンペーンテーブル
+      const tbody = document.getElementById('campaignTbody');
+      tbody.innerHTML = '';
+      genCampaigns().forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${row.name}</td>
+          <td class="text-end">${fmtNumber(row.clicks)}</td>
+          <td class="text-end">${fmtNumber(row.cv)}</td>
+          <td class="text-end">${row.cvr.toFixed(2)}%</td>
+          <td class="text-end">${fmtYen(row.cpa)}</td>
+          <td class="text-end">${fmtYen(row.cost)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // 4) チャート描画/更新
+      const lineCtx = document.getElementById('lineChart');
+      const barCtx  = document.getElementById('barChart');
+      const pieCtx  = document.getElementById('pieChart');
+
+      const grid = { color: 'rgba(0,0,0,.05)' };
+      const ticks = { color: 'rgba(33,37,41,.7)', font: { size: 11 } };
+
+      const lineData = {
+        labels,
+        datasets: [
+          { label: '訪問数', data: series.visitors, borderWidth: 2, tension: .3 },
+          { label: 'CV', data: series.conversions, borderWidth: 2, tension: .3 }
+        ]
+      };
+      const lineOpts = {
+        responsive: true, maintainAspectRatio: false,
+        scales: { x: { grid }, y: { grid, ticks } },
+        plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', intersect: false } }
+      };
+
+      const barData = {
+        labels: channels.map(c=>c.name),
+        datasets: [{ label: '訪問数（直近月）', data: channels.map(c=>c.value) }]
+      };
+      const barOpts = { responsive: true, maintainAspectRatio: false, scales: { x: { grid }, y: { grid, ticks } } };
+
+      const pieData = {
+        labels: ['スマホ','デスクトップ','タブレット'],
+        datasets: [{ data: devices }]
+      };
+      const pieOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } };
+
+      if (lineChart) lineChart.destroy();
+      if (barChart) barChart.destroy();
+      if (pieChart) pieChart.destroy();
+      lineChart = new Chart(lineCtx, { type: 'line', data: lineData, options: lineOpts });
+      barChart  = new Chart(barCtx,  { type: 'bar',  data: barData,  options: barOpts  });
+      pieChart  = new Chart(pieCtx,  { type: 'doughnut', data: pieData, options: pieOpts });
+    }
+
+    // 初期化
+    window.addEventListener('DOMContentLoaded', () => {
+      const rangeSelect = document.getElementById('rangeSelect');
+      const regenBtn = document.getElementById('regenBtn');
+      const build = () => rebuild(parseInt(rangeSelect.value, 10));
+      rangeSelect.addEventListener('change', build);
+      regenBtn.addEventListener('click', build);
+      build();
+    });
+  </script>
+</body>
+</html>
