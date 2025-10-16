@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>マーケティングダッシュボード（モック）</title>
+  <title>ダッシュボード（モックアップ）</title>
   <!-- Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- Bootstrap Icons (任意) -->
@@ -24,7 +24,7 @@
   <!-- ナビゲーション -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container-fluid">
-      <a class="navbar-brand fw-bold" href="#"><i class="bi bi-graph-up"></i> Marketing Dashboard (Mock)</a>
+      <a class="navbar-brand fw-bold" href="#"><i class="bi bi-graph-up"></i> Prototype Dashboard (Mockup)</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -56,7 +56,7 @@
     <div class="row g-3">
       <div class="col-12 col-md-6 col-xl-3">
         <div class="card card-kpi p-3">
-          <div class="kpi-title">訪問数（Sessions）</div>
+          <div class="kpi-title">訪問者数</div>
           <div class="d-flex justify-content-between align-items-end">
             <div class="kpi-value" id="kpiVisitors">--</div>
             <div class="kpi-delta" id="deltaVisitors">--</div>
@@ -96,23 +96,24 @@
     <div class="row g-3 mt-1">
       <div class="col-12 col-xl-6">
         <div class="card h-100">
-          <div class="card-header fw-semibold">月次トレンド：訪問数とCV</div>
+          <div class="card-header fw-semibold">月次トレンド：訪問者数とCV</div>
           <div class="card-body"><canvas id="lineChart" height="140"></canvas></div>
         </div>
       </div>
       <div class="col-12 col-xl-6">
         <div class="card h-100">
-          <div class="card-header fw-semibold">チャネル別流入（直近月）</div>
+          <div class="card-header fw-semibold">フロア別流入（直近月）</div>
           <div class="card-body"><canvas id="barChart" height="140"></canvas></div>
         </div>
       </div>
       <div class="col-12 col-xl-4">
         <div class="card h-100">
-          <div class="card-header fw-semibold">デバイス構成（直近月）</div>
+          <div class="card-header fw-semibold">年齢構成（直近月）</div>
           <div class="card-body"><canvas id="pieChart" height="160"></canvas></div>
         </div>
       </div>
-      <div class="col-12 col-xl-8">
+
+      <div class="col-12 col-xl-8 d-none">
         <div class="card h-100">
           <div class="card-header fw-semibold d-flex align-items-center justify-content-between">
             <span>最新キャンペーン別成績（直近月）</span>
@@ -139,7 +140,7 @@
       </div>
     </div>
 
-    <div class="alert alert-info mt-4" role="alert">
+    <div class="alert alert-info mt-4 d-none" role="alert">
       <i class="bi bi-info-circle"></i>
       このページは <strong>完全静的なHTMLモック</strong> です。Xserver等の共有サーバーに <code>index.html</code> としてアップロードするだけで動作します。実データに差し替える場合は、後日 <code>fetch()</code> でCSV/JSONを読み込むハンドラを追加してください。
     </div>
@@ -155,7 +156,11 @@
   <script>
     // ===== ダミーデータ生成ユーティリティ =====
     const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-    const randFloat = (min, max, digits = 2) => (Math.random() * (max - min) + min).toFixed(digits);
+//    const randFloat = (min, max, digits = 2) => (Math.random() * (max - min) + min).toFixed(digits);
+    const randFloat = (min, max, digits = 2) => {
+      const v = Math.random() * (max - min) + min;
+      return Number(v.toFixed(digits));
+    };
 
     const monthLabels = (n) => {
       const labels = [];
@@ -183,7 +188,7 @@
     }
 
     function genChannels() {
-      const names = ['Organic','Paid','Social','Direct','Referral','Email'];
+      const names = ['1F','2F','3F','4F','5F','6F'];
       const arr = names.map(n => ({ name: n, value: randInt(300, 4000) }));
       // ソートして見やすく
       arr.sort((a,b)=>b.value-a.value);
@@ -191,10 +196,13 @@
     }
 
     function genDevices() {
-      const phone = randInt(50, 75);
-      const desktop = randInt(20, 45);
-      const tablet = Math.max(100 - phone - desktop, 5);
-      return [phone, desktop, tablet];
+      const cgroup = randInt(10, 15);
+      const tgroup = randInt(15, 20);
+      const fm1group = Math.max(100 - cgroup - tgroup, 35);
+      const fm2group = Math.max(100 - cgroup - tgroup, 25);
+      const fm3group = Math.max(100 - cgroup - tgroup, 10);
+      const fm4group = Math.max(100 - cgroup - tgroup, 5);
+      return [cgroup, tgroup, fm1group, fm2group, fm3group, fm4group];
     }
 
     function genCampaigns() {
@@ -281,7 +289,7 @@
       const lineData = {
         labels,
         datasets: [
-          { label: '訪問数', data: series.visitors, borderWidth: 2, tension: .3 },
+          { label: '訪問者数', data: series.visitors, borderWidth: 2, tension: .3 },
           { label: 'CV', data: series.conversions, borderWidth: 2, tension: .3 }
         ]
       };
@@ -293,12 +301,12 @@
 
       const barData = {
         labels: channels.map(c=>c.name),
-        datasets: [{ label: '訪問数（直近月）', data: channels.map(c=>c.value) }]
+        datasets: [{ label: '訪問者数（直近月）', data: channels.map(c=>c.value) }]
       };
       const barOpts = { responsive: true, maintainAspectRatio: false, scales: { x: { grid }, y: { grid, ticks } } };
 
       const pieData = {
-        labels: ['スマホ','デスクトップ','タブレット'],
+        labels: ['C(4~12)','T(12~19)','F1/M1(20~34)','F2/M2(35~49)','F3/M3(50~64)','F4/M4(65~)'],
         datasets: [{ data: devices }]
       };
       const pieOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } };
